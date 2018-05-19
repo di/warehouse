@@ -180,6 +180,15 @@ def includeme(config):
         domain=warehouse,
     )
 
+    # Support
+    config.add_route(
+        "support.flag-project",
+        "/support/flag/project/{project_name}/",
+        factory="warehouse.packaging.models:ProjectFactory",
+        traverse="/{project_name}",
+        domain=warehouse,
+    )
+
     # Packaging
     config.add_redirect("/p/{name}/", "/project/{name}/", domain=warehouse)
     config.add_route(
