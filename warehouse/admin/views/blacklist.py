@@ -23,7 +23,7 @@ from warehouse.accounts.models import User
 from warehouse.packaging.models import BlacklistedProject, File, Project, Release, Role
 from warehouse.utils.http import is_safe_url
 from warehouse.utils.paginate import paginate_url_factory
-from warehouse.utils.project import remove_project
+from warehouse.utils.packaging import destroy_project
 
 
 @view_config(
@@ -181,7 +181,7 @@ def add_blacklist(request):
         .first()
     )
     if project is not None:
-        remove_project(project, request)
+        destroy_project(project, request)
 
     request.session.flash(f"Blacklisted {project_name!r}", queue="success")
 

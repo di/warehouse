@@ -28,7 +28,7 @@ from warehouse.utils.project import (
     confirm_project,
     destroy_docs,
     remove_documentation,
-    remove_project,
+    destroy_project,
 )
 
 from ...common.db.accounts import UserFactory
@@ -92,7 +92,7 @@ def test_confirm_incorrect_input():
     ]
 
 
-def test_remove_project(db_request):
+def test_destroy_project(db_request):
     user = UserFactory.create()
     project = ProjectFactory.create(name="foo")
     release = ReleaseFactory.create(project=project)
@@ -104,7 +104,7 @@ def test_remove_project(db_request):
     db_request.remote_addr = "192.168.1.1"
     db_request.session = stub(flash=call_recorder(lambda *a, **kw: stub()))
 
-    remove_project(project, db_request)
+    destroy_project(project, db_request)
 
     assert db_request.session.flash.calls == [
         call("Deleted the project 'foo'", queue="success")
