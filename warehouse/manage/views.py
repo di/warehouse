@@ -39,7 +39,7 @@ from warehouse.manage.forms import (
 )
 from warehouse.packaging.models import File, JournalEntry, Project, Release, Role
 from warehouse.utils.paginate import paginate_url_factory
-from warehouse.utils.project import confirm_project, destroy_docs, remove_project
+from warehouse.utils.project import confirm_project, destroy_docs
 
 
 def user_projects(request):
@@ -65,12 +65,33 @@ def user_projects(request):
             request.db.query(Project)
             .join(projects_owned, Project.id == projects_owned.c.id)
             .order_by(Project.name)
+            .execution_options(include_deleted=True)
             .all()
         ),
         "projects_sole_owned": (
-            request.db.query(Project).join(with_sole_owner).order_by(Project.name).all()
+            request.db.query(Project)
+            .join(with_sole_owner)
+            .order_by(Project.name)
+            .execution_options(include_deleted=True)
+            .all()
         ),
     }
+
+
+def soft_delete_file(file_):
+    file_.deleted = True
+
+
+def soft_delete_release(release):
+    release.deleted = True
+    for file_ in release.files:
+        soft_delete_file(file_)
+
+
+def soft_delete_project(project):
+    project.deleted = True
+    for release in project.releases:
+        soft_delete_release(release)
 
 
 @view_defaults(
@@ -335,7 +356,19 @@ def manage_project_settings(project, request):
 )
 def delete_project(project, request):
     confirm_project(project, request, fail_route="manage.project.settings")
-    remove_project(project, request)
+
+    request.db.add(
+        JournalEntry(
+            name=project.name,
+            action="remove project",
+            submitted_by=request.user,
+            submitted_from=request.remote_addr,
+        )
+    )
+
+    soft_delete_project(project)
+
+    request.session.flash(f"Deleted the project {project.name!r}", queue="success")
 
     return HTTPSeeOther(request.route_path("manage.projects"))
 
@@ -428,7 +461,7 @@ class ManageProjectRelease:
             )
         )
 
-        self.request.db.delete(self.release)
+        soft_delete_release(self.release)
 
         self.request.session.flash(
             f"Deleted release {self.release.version!r}", queue="success"
@@ -487,7 +520,7 @@ class ManageProjectRelease:
             )
         )
 
-        self.request.db.delete(release_file)
+        soft_delete_file(release_file)
 
         self.request.session.flash(
             f"Deleted file {release_file.filename!r}", queue="success"

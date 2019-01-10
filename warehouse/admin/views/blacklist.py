@@ -23,7 +23,7 @@ from warehouse.accounts.models import User
 from warehouse.packaging.models import BlacklistedProject, File, Project, Release, Role
 from warehouse.utils.http import is_safe_url
 from warehouse.utils.paginate import paginate_url_factory
-from warehouse.utils.packaging import destroy_project
+from warehouse.utils.project import destroy_project
 
 
 @view_config(

@@ -27,8 +27,8 @@ from warehouse.packaging.models import (
 from warehouse.utils.project import (
     confirm_project,
     destroy_docs,
-    remove_documentation,
     destroy_project,
+    remove_documentation,
 )
 
 from ...common.db.accounts import UserFactory

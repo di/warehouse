@@ -29,7 +29,7 @@
       </thead>
       <tbody>
       {% for release in project.releases %}
-        <tr>
+        <tr class="{{'deleted' if release.deleted else ''}}">
           <td class="table__version">
             <a href="{{ request.route_path('manage.project.release', project_name=project.name, version=release.version) }}" title="Manage version">
               {{ release.version }}
@@ -44,6 +44,11 @@
             {% endif %}
             </td>
           <td class="table__options">
+            {% if release.deleted %}
+              <a href="" class="button button--primary">
+                Restore
+              </a>
+            {% else %}
             <nav class="dropdown dropdown--with-icons">
               <button class="button button--primary dropdown__trigger" aria-haspopup="true" aria-expanded="false">
                 Options
@@ -75,6 +80,7 @@
                 </li>
               </ul>
             </nav>
+            {% endif %}
             {% set action = request.route_path('manage.project.release', project_name=project.name, version=release.version) %}
             {{ confirm_modal(title, "Version", release.version, slug, index=loop.index, action=action) }}
           </td>
