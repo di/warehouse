@@ -118,6 +118,9 @@ services:
       - ./.sass-lint.yml:/opt/warehouse/src/.sass-lint.yml:z
       - ./tests/frontend:/opt/warehouse/src/tests/frontend:z
       - ./bin:/opt/warehouse/src/bin:z
+      # Don't sync dist directories back to the host
+      - /opt/warehouse/src/warehouse/static/dist
+      - /opt/warehouse/src/warehouse/admin/static/dist
 
   smtp:
     build:
