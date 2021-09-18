@@ -139,6 +139,10 @@ ifneq ($(GITHUB_BASE_REF), false)
 	git diff --name-only FETCH_HEAD | grep '^requirements/' || exit 0 && $(MAKE) deps
 endif
 
+resetdb:
+	docker-compose rm --stop --force db
+	docker-compose up -d db
+
 initdb:
 	docker-compose run --rm web python -m warehouse db upgrade head
 	$(MAKE) reindex
