@@ -1,4 +1,5 @@
 BINDIR = $(PWD)/.state/env/bin
+COMPOSE_PROJECT_NAME ?= $(notdir $(abspath .))
 GITHUB_ACTIONS := $(shell echo "$${GITHUB_ACTIONS:-false}")
 GITHUB_BASE_REF := $(shell echo "$${GITHUB_BASE_REF:-false}")
 DB := example
@@ -141,7 +142,7 @@ endif
 
 resetdb:
 	docker-compose rm --stop --force db
-	docker volume rm warehouse_pgdata
+	docker volume rm $(COMPOSE_PROJECT_NAME)_pgdata
 	docker-compose up -d db
 
 initdb:
