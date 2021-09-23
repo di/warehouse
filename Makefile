@@ -141,6 +141,7 @@ endif
 
 resetdb:
 	docker-compose rm --stop --force db
+	docker volume rm warehouse_pgdata
 	docker-compose up -d db
 
 initdb:
