@@ -26,13 +26,16 @@ services:
       - ./dev/vault:/etc/vault
 
   db:
-    image: postgres:10
+    image: postgres:12.7
     ports:
       # 5432 may already in use by another PostgreSQL on host
       - "5433:5432"
+    user: postgres
     environment:
       POSTGRES_DB: warehouse
       POSTGRES_PASSWORD: password
+    healthcheck:
+      test: ['CMD', 'pg_isready']
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./dev/example.sql.xz:/docker-entrypoint-initdb.d/example.sql.xz:ro

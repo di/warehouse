@@ -140,12 +140,11 @@ ifneq ($(GITHUB_BASE_REF), false)
 	git diff --name-only FETCH_HEAD | grep '^requirements/' || exit 0 && $(MAKE) deps
 endif
 
-resetdb:
-	docker-compose rm --stop --force db
-	docker volume rm $(COMPOSE_PROJECT_NAME)_pgdata
-	docker-compose up -d db
-
 initdb:
+	docker-compose rm --stop --force db | true
+	docker volume rm $(COMPOSE_PROJECT_NAME)_pgdata | true
+	docker-compose up -d db
+	until docker inspect --format='{{.State.Health.Status}}' db != "healthy"; do sleep 1; done
 	docker-compose run --rm web python -m warehouse db upgrade head
 	$(MAKE) reindex
 	docker-compose run web python -m warehouse sponsors populate-db
