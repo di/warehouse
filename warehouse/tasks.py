@@ -96,10 +96,33 @@ class WarehouseTask(celery.Task):
             request = obj.get_request()
             metrics = request.find_service(IMetricsService, context=None)
             metric_tags = [f"task:{obj.name}"]
+            cache = request.find_service(ITaskCache)
 
             with request.tm, metrics.timed("warehouse.task.run", tags=metric_tags):
                 try:
+                    debounce_key = kwargs.pop("debounce_key", None)
+
+                    if debounce_key:
+                        print("running debounce check")
+                        this_call_count = kwargs.pop("this_call_count", 1)
+                        total_call_count = int(cache.get(debounce_key, 1))
+                        if total_call_count > this_call_count:
+                            # someone called the function again before the this
+                            # was executed
+                            print(
+                                f"task was debounced (this_call_count:"
+                                f"{this_call_count}, count: {total_call_count})"
+                            )
+                            return None
+                    else:
+                        print("not running debounce check")
+
                     result = original_run(*args, **kwargs)
+
+                    if debounce_key:
+                        # Reset the call counter
+                        cache.delete(debounce_key)
+
                     metrics.increment("warehouse.task.complete", tags=metric_tags)
                     return result
                 except BaseException as exc:
@@ -139,6 +162,23 @@ class WarehouseTask(celery.Task):
         # The API design of Celery makes this threadlocal pretty impossible to
         # avoid :(
         request = get_current_request()
+
+        debounce_key_fn = kwargs.pop("debounce_key_fn", lambda *a: None)
+        debounce_key = debounce_key_fn(*kwargs.get("args", []))
+
+        if debounce_key:
+            print("Got task with debounce key, counting down")
+            # Set a 10 second countdown if we haven't explictly set one
+            kwargs["countdown"] = kwargs.get("countdown", 10)
+
+            # Set the key for the debounce cache
+            cache = request.find_service(ITaskCache)
+            cache.incr(debounce_key)
+            self.flag = "hiya"
+            kwargs["kwargs"] = {
+                "this_call_count": int(cache.get(debounce_key, 1)),
+                "debounce_key": debounce_key,
+            }
 
         # If for whatever reason we were unable to get a request we'll just
         # skip this and call the original method to send this immediately.
