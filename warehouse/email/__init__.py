@@ -99,23 +99,26 @@ def _send_email_to_user(
         if last_sent and (datetime.datetime.now() - last_sent) <= repeat_window:
             return
 
-    request.task(send_email).delay(
-        _compute_recipient(user, email.email),
-        {
-            "subject": msg.subject,
-            "body_text": msg.body_text,
-            "body_html": msg.body_html,
-        },
-        {
-            "tag": "account:email:sent",
-            "user_id": user.id,
-            "additional": {
-                "from_": request.registry.settings.get("mail.sender"),
-                "to": email.email,
+    request.task(send_email).apply_async(
+        args=[
+            _compute_recipient(user, email.email),
+            {
                 "subject": msg.subject,
-                "redact_ip": _redact_ip(request, email.email),
+                "body_text": msg.body_text,
+                "body_html": msg.body_html,
             },
-        },
+            {
+                "tag": "account:email:sent",
+                "user_id": user.id,
+                "additional": {
+                    "from_": request.registry.settings.get("mail.sender"),
+                    "to": email.email,
+                    "subject": msg.subject,
+                    "redact_ip": _redact_ip(request, email.email),
+                },
+            },
+        ],
+        debounce_key_fn=lambda *a, **kw: "foo",
     )
 
 
