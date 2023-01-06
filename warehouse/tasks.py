@@ -21,11 +21,13 @@ import celery.app.backends
 import celery.backends.redis
 import pyramid.scripting
 import pyramid_retry
+import redis
 import transaction
 import venusian
 
 from kombu import Queue
 from pyramid.threadlocal import get_current_request
+from zope.interface import Interface, implementer
 
 from warehouse.config import Environment
 from warehouse.metrics import IMetricsService
@@ -48,6 +50,35 @@ class TLSRedisBackend(celery.backends.redis.RedisBackend):
         params = super()._params_from_url(url, defaults)
         params.update({"connection_class": self.redis.SSLConnection})
         return params
+
+
+class ITaskCache(Interface):
+    def create_service(context, request):
+        """
+        Create the service, given the context and request for which it is
+        being created for
+        """
+
+
+@implementer(ITaskCache)
+class TaskCache:
+    def __init__(self, redis_url, redis_db=0):
+        self.redis_conn = redis.StrictRedis.from_url(
+            redis_url, db=redis_db, decode_responses=True
+        )
+
+    @classmethod
+    def create_service(cls, context, request):
+        return cls(request.registry.settings.get("warehouse.tasks.cache.url"))
+
+    def get(self, key, default):
+        return self.redis_conn.get(key) or default
+
+    def incr(self, key, amount=1):
+        return self.redis_conn.incr(key, amount=amount)
+
+    def delete(self, key):
+        return self.redis_conn.delete(key)
 
 
 class WarehouseTask(celery.Task):
@@ -221,3 +252,5 @@ def includeme(config):
     config.add_directive("make_celery_app", _get_celery_app, action_wrap=False)
     config.add_directive("task", _get_task_from_config, action_wrap=False)
     config.add_request_method(_get_task_from_request, name="task", reify=True)
+
+    config.register_service_factory(TaskCache.create_service, iface=ITaskCache)

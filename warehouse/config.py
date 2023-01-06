@@ -189,6 +189,7 @@ def configure(settings=None):
     maybe_set(settings, "sentry.transport", "SENTRY_TRANSPORT")
     maybe_set(settings, "sessions.url", "REDIS_URL")
     maybe_set(settings, "ratelimit.url", "REDIS_URL")
+    maybe_set(settings, "warehouse.tasks.cache.url", "REDIS_URL")
     maybe_set(settings, "sessions.secret", "SESSION_SECRET")
     maybe_set(settings, "camo.url", "CAMO_URL")
     maybe_set(settings, "camo.key", "CAMO_KEY")
