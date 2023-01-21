@@ -3055,7 +3055,6 @@ class TestFileUpload:
 
         assert release.uploaded_via == "warehouse-tests/6.6.6"
 
-    # here
     @pytest.mark.parametrize(
         "version, expected_version",
         [
@@ -3229,8 +3228,55 @@ class TestFileUpload:
         # Ensure that a Release object has been created.
         releases = db_request.db.query(Release).filter(Release.project == project).all()
 
-        # Asset that only one release has been created
+        # Assert that only one release has been created
         assert releases == [release]
+
+    def test_legacy_version_new_release(self, pyramid_config, db_request, metrics):
+        """
+        Test that if a release with a legacy version like 'dog' exists, that a future
+        upload with a new version like '1.0' will succeed
+        """
+
+        user = UserFactory.create()
+        EmailFactory.create(user=user)
+        project = ProjectFactory.create()
+        ReleaseFactory.create(project=project, version="dog")
+        RoleFactory.create(user=user, project=project)
+
+        pyramid_config.testing_securitypolicy(identity=user)
+        db_request.user = user
+        db_request.user_agent = "warehouse-tests/6.6.6"
+        db_request.POST = MultiDict(
+            {
+                "metadata_version": "1.2",
+                "name": project.name,
+                "version": "1.0",
+                "summary": "This is my summary!",
+                "filetype": "sdist",
+                "md5_digest": _TAR_GZ_PKG_MD5,
+                "content": pretend.stub(
+                    filename="{}-{}.tar.gz".format(project.name, "1.0.0"),
+                    file=io.BytesIO(_TAR_GZ_PKG_TESTDATA),
+                    type="application/tar",
+                ),
+            }
+        )
+
+        storage_service = pretend.stub(store=lambda path, filepath, meta: None)
+        db_request.find_service = lambda svc, name=None, context=None: {
+            IFileStorage: storage_service,
+            IMetricsService: metrics,
+        }.get(svc)
+
+        resp = legacy.file_upload(db_request)
+
+        assert resp.status_code == 200
+
+        # Assert that the new release has been created
+        releases = db_request.db.query(Release).filter(Release.project == project).all()
+        assert len(releases) == 2
+        assert releases[0].version == "1.0"
+        assert releases[1].version == "dog"
 
     def test_equivalent_canonical_versions(self, pyramid_config, db_request, metrics):
         """
