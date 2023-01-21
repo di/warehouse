@@ -55,6 +55,7 @@ RUN set -x \
     && apt-get update \
     && apt-get install --no-install-recommends -y \
         build-essential libffi-dev libxml2-dev libxslt-dev libpq-dev libcurl4-openssl-dev libssl-dev \
+        git \
         $(if [ "$DEVEL" = "yes" ]; then echo 'libjpeg-dev'; fi)
 
 # We create an /opt directory with a virtual environment in it to store our
@@ -97,6 +98,7 @@ RUN set -x \
                     -r /tmp/requirements/deploy.txt \
                     -r /tmp/requirements/main.txt \
                     $(if [ "$DEVEL" = "yes" ]; then echo '-r /tmp/requirements/tests.txt -r /tmp/requirements/lint.txt -r /tmp/requirements/docs.txt'; fi) \
+    && pip --no-cache-dir --disable-pip-version-check install git+https://github.com/di/packaging-legacy \
     && pip check \
     && find /opt/warehouse -name '*.pyc' -delete
 
