@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import packaging.version
+import packaging_legacy.version
 
 from elasticsearch_dsl import Date, Document, Float, Keyword, Text, analyzer
 
@@ -57,7 +57,9 @@ class Project(Document):
         obj["name"] = release.name
         obj["normalized_name"] = release.normalized_name
         obj["version"] = sorted(
-            release.all_versions, key=lambda r: packaging.version.parse(r), reverse=True
+            release.all_versions,
+            key=lambda r: packaging_legacy.version.parse(r),
+            reverse=True,
         )
         obj["latest_version"] = release.latest_version
         obj["summary"] = release.summary
