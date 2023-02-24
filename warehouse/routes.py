@@ -196,7 +196,10 @@ def includeme(config):
     # Management (views for logged-in users)
     config.add_route("manage.account", "/manage/account/", domain=warehouse)
     config.add_route(
-        "manage.account.publishing", "/manage/account/publishing/", domain=warehouse
+        "manage.account.publishing",
+        "/manage/account/publishing/",
+        factory="warehouse.accounts.models:CurrentUserFactory",
+        domain=warehouse,
     )
     config.add_route(
         "manage.account.two-factor", "/manage/account/two-factor/", domain=warehouse

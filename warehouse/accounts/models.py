@@ -54,6 +54,10 @@ class UserFactory:
             raise KeyError from None
 
 
+def CurrentUserFactory(request):  # NOQA: ignore=N802
+    return request.user
+
+
 class DisableReason(enum.Enum):
 
     CompromisedPassword = "password compromised"
@@ -199,6 +203,7 @@ class User(SitemapMixin, HasEvents, db.Model):
         return [
             (Allow, "group:admins", "admin"),
             (Allow, "group:moderators", "moderator"),
+            (Allow, f"user:{self.id}", "manage:user"),
         ]
 
 

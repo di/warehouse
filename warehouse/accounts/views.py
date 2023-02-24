@@ -1305,9 +1305,10 @@ def reauthenticate(request, _form_class=ReAuthenticateForm):
     permission="manage:user",
     has_translations=True,
     require_reauth=True,
+    context=User,
 )
 class ManageAccountPublishingViews:
-    def __init__(self, request):
+    def __init__(self, user, request):
         self.request = request
         self.oidc_enabled = self.request.registry.settings["warehouse.oidc.enabled"]
         self.project_factory = ProjectFactory(request)

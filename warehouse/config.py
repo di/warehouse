@@ -19,7 +19,7 @@ import orjson
 import transaction
 
 from pyramid import renderers
-from pyramid.authorization import Allow, Authenticated
+from pyramid.authorization import Allow
 from pyramid.config import Configurator as _Configurator
 from pyramid.response import Response
 from pyramid.tweens import EXCVIEW
@@ -62,7 +62,6 @@ class RootFactory:
         (Allow, "group:moderators", "moderator"),
         (Allow, "group:psf_staff", "psf_staff"),
         (Allow, "group:with_admin_dashboard_access", "admin_dashboard_access"),
-        (Allow, Authenticated, "manage:user"),
     ]
 
     def __init__(self, request):
