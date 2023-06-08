@@ -74,9 +74,17 @@ from warehouse.email import (
 )
 from warehouse.events.tags import EventTag
 from warehouse.metrics.interfaces import IMetricsService
-from warehouse.oidc.forms import DeletePublisherForm, PendingGitHubPublisherForm
+from warehouse.oidc.forms import (
+    DeletePublisherForm,
+    PendingGitHubPublisherForm,
+    PendingGooglePublisherForm,
+)
 from warehouse.oidc.interfaces import TooManyOIDCRegistrations
-from warehouse.oidc.models import PendingGitHubPublisher, PendingOIDCPublisher
+from warehouse.oidc.models import (
+    PendingGitHubPublisher,
+    PendingGooglePublisher,
+    PendingOIDCPublisher,
+)
 from warehouse.organizations.interfaces import IOrganizationService
 from warehouse.organizations.models import OrganizationRole, OrganizationRoleType
 from warehouse.packaging.models import (
@@ -1422,9 +1430,17 @@ class ManageAccountPublishingViews:
         )
 
     @property
+    def pending_google_publisher_form(self):
+        return PendingGooglePublisherForm(
+            self.request.POST,
+            project_factory=self.project_factory,
+        )
+
+    @property
     def default_response(self):
         return {
             "pending_github_publisher_form": self.pending_github_publisher_form,
+            "pending_google_publisher_form": self.pending_google_publisher_form,
         }
 
     @view_config(request_method="GET")
@@ -1440,6 +1456,133 @@ class ManageAccountPublishingViews:
             return self.default_response
 
         return self.default_response
+
+    @view_config(
+        request_method="POST",
+        request_param=PendingGooglePublisherForm.__params__,
+    )
+    def add_pending_google_oidc_pubisher(self):
+        if self.request.flags.disallow_oidc(AdminFlagValue.DISALLOW_GOOGLE_OIDC):
+            self.request.session.flash(
+                self.request._(
+                    "Google-based trusted publishing is temporarily disabled. "
+                    "See https://pypi.org/help#admin-intervention for details."
+                ),
+                queue="error",
+            )
+            return self.default_response
+
+        self.metrics.increment(
+            "warehouse.oidc.add_pending_publisher.attempt", tags=["publisher:Google"]
+        )
+
+        if not self.request.user.has_primary_verified_email:
+            self.request.session.flash(
+                self.request._(
+                    "You must have a verified email in order to register a "
+                    "pending trusted publisher. "
+                    "See https://pypi.org/help#openid-connect for details."
+                ),
+                queue="error",
+            )
+            return self.default_response
+
+        # Separately from having permission to register pending OIDC publishers,
+        # we limit users to no more than 3 pending publishers at once.
+        if len(self.request.user.pending_oidc_publishers) >= 3:
+            self.request.session.flash(
+                self.request._(
+                    "You can't register more than 3 pending trusted "
+                    "publishers at once."
+                ),
+                queue="error",
+            )
+            return self.default_response
+
+        try:
+            self._check_ratelimits()
+        except TooManyOIDCRegistrations as exc:
+            self.metrics.increment(
+                "warehouse.oidc.add_pending_publisher.ratelimited",
+                tags=["publisher:Google"],
+            )
+            return HTTPTooManyRequests(
+                self.request._(
+                    "There have been too many attempted trusted publisher "
+                    "registrations. Try again later."
+                ),
+                retry_after=exc.resets_in.total_seconds(),
+            )
+
+        self._hit_ratelimits()
+
+        response = self.default_response
+        form = response["pending_google_publisher_form"]
+
+        if not form.validate():
+            self.request.session.flash(
+                self.request._("The trusted publisher could not be registered"),
+                queue="error",
+            )
+            return response
+
+        publisher_already_exists = (
+            self.request.db.query(PendingGooglePublisher)
+            .filter_by(
+                email=form.email.data,
+                sub=form.sub.data,
+            )
+            .first()
+            is not None
+        )
+
+        if publisher_already_exists:
+            self.request.session.flash(
+                self.request._(
+                    "This trusted publisher has already been registered. "
+                    "Please contact PyPI's admins if this wasn't intentional."
+                ),
+                queue="error",
+            )
+            return response
+
+        pending_publisher = PendingGooglePublisher(
+            project_name=form.project_name.data,
+            added_by=self.request.user,
+            email=form.email.data,
+            sub=form.sub.data,
+        )
+
+        self.request.db.add(pending_publisher)
+        self.request.db.flush()  # To get the new ID
+
+        self.request.user.record_event(
+            tag=EventTag.Account.PendingOIDCPublisherAdded,
+            ip_address=self.request.remote_addr,
+            request=self.request,
+            additional={
+                "project": pending_publisher.project_name,
+                "publisher": pending_publisher.publisher_name,
+                "id": str(pending_publisher.id),
+                "specifier": str(pending_publisher),
+                "url": pending_publisher.publisher_url(),
+                "submitted_by": self.request.user.username,
+            },
+        )
+
+        self.request.session.flash(
+            self.request._(
+                "Registered a new pending publisher to create "
+                f"the project '{pending_publisher.project_name}'."
+            ),
+            queue="success",
+        )
+
+        self.metrics.increment(
+            "warehouse.oidc.add_pending_publisher.ok", tags=["publisher:Google"]
+        )
+
+        return HTTPSeeOther(self.request.path)
 
     @view_config(
         request_method="POST",

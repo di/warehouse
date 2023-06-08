@@ -168,6 +168,10 @@ class GitHubPublisherBase(forms.Form):
 class PendingGitHubPublisherForm(GitHubPublisherBase, PendingPublisherMixin):
     __params__ = GitHubPublisherBase.__params__ + ["project_name"]
 
+    def __init__(self, *args, project_factory, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._project_factory = project_factory
+
 
 class GitHubPublisherForm(GitHubPublisherBase):
     pass

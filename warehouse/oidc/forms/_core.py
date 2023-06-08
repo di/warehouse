@@ -27,10 +27,6 @@ class PendingPublisherMixin:
         ]
     )
 
-    def __init__(self, *args, project_factory, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._project_factory = project_factory
-
     def validate_project_name(self, field):
         project_name = field.data
 
