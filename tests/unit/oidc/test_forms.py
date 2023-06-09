@@ -89,7 +89,7 @@ class TestGitHubPublisherForm:
         requests = pretend.stub(
             get=pretend.call_recorder(lambda o, **kw: response), HTTPError=HTTPError
         )
-        monkeypatch.setattr(forms, "requests", requests)
+        monkeypatch.setattr(forms.github, "requests", requests)
 
         form = forms.GitHubPublisherForm(api_token="fake-token")
         with pytest.raises(wtforms.validators.ValidationError):
@@ -115,10 +115,10 @@ class TestGitHubPublisherForm:
         requests = pretend.stub(
             get=pretend.call_recorder(lambda o, **kw: response), HTTPError=HTTPError
         )
-        monkeypatch.setattr(forms, "requests", requests)
+        monkeypatch.setattr(forms.github, "requests", requests)
 
         sentry_sdk = pretend.stub(capture_message=pretend.call_recorder(lambda s: None))
-        monkeypatch.setattr(forms, "sentry_sdk", sentry_sdk)
+        monkeypatch.setattr(forms.github, "sentry_sdk", sentry_sdk)
 
         form = forms.GitHubPublisherForm(api_token="fake-token")
         with pytest.raises(wtforms.validators.ValidationError):
@@ -151,10 +151,10 @@ class TestGitHubPublisherForm:
         requests = pretend.stub(
             get=pretend.call_recorder(lambda o, **kw: response), HTTPError=HTTPError
         )
-        monkeypatch.setattr(forms, "requests", requests)
+        monkeypatch.setattr(forms.github, "requests", requests)
 
         sentry_sdk = pretend.stub(capture_message=pretend.call_recorder(lambda s: None))
-        monkeypatch.setattr(forms, "sentry_sdk", sentry_sdk)
+        monkeypatch.setattr(forms.github, "sentry_sdk", sentry_sdk)
 
         form = forms.GitHubPublisherForm(api_token="fake-token")
         with pytest.raises(wtforms.validators.ValidationError):
@@ -185,10 +185,10 @@ class TestGitHubPublisherForm:
             HTTPError=HTTPError,
             ConnectionError=ConnectionError,
         )
-        monkeypatch.setattr(forms, "requests", requests)
+        monkeypatch.setattr(forms.github, "requests", requests)
 
         sentry_sdk = pretend.stub(capture_message=pretend.call_recorder(lambda s: None))
-        monkeypatch.setattr(forms, "sentry_sdk", sentry_sdk)
+        monkeypatch.setattr(forms.github, "sentry_sdk", sentry_sdk)
 
         form = forms.GitHubPublisherForm(api_token="fake-token")
         with pytest.raises(wtforms.validators.ValidationError):
@@ -205,10 +205,10 @@ class TestGitHubPublisherForm:
             HTTPError=HTTPError,
             ConnectionError=ConnectionError,
         )
-        monkeypatch.setattr(forms, "requests", requests)
+        monkeypatch.setattr(forms.github, "requests", requests)
 
         sentry_sdk = pretend.stub(capture_message=pretend.call_recorder(lambda s: None))
-        monkeypatch.setattr(forms, "sentry_sdk", sentry_sdk)
+        monkeypatch.setattr(forms.github, "sentry_sdk", sentry_sdk)
 
         form = forms.GitHubPublisherForm(api_token="fake-token")
         with pytest.raises(wtforms.validators.ValidationError):
@@ -230,7 +230,7 @@ class TestGitHubPublisherForm:
         requests = pretend.stub(
             get=pretend.call_recorder(lambda o, **kw: response), HTTPError=HTTPError
         )
-        monkeypatch.setattr(forms, "requests", requests)
+        monkeypatch.setattr(forms.github, "requests", requests)
 
         form = forms.GitHubPublisherForm(api_token="fake-token")
         info = form._lookup_owner("some-owner")
