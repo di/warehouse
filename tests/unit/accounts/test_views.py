@@ -3098,11 +3098,19 @@ class TestManageAccountPublishingViews:
         monkeypatch.setattr(
             views, "PendingGitHubPublisherForm", pending_github_publisher_form_cls
         )
+        pending_google_publisher_form_obj = pretend.stub()
+        pending_google_publisher_form_cls = pretend.call_recorder(
+            lambda *a, **kw: pending_google_publisher_form_obj
+        )
+        monkeypatch.setattr(
+            views, "PendingGooglePublisherForm", pending_google_publisher_form_cls
+        )
 
         view = views.ManageAccountPublishingViews(request)
 
         assert view.manage_publishing() == {
             "pending_github_publisher_form": pending_github_publisher_form_obj,
+            "pending_google_publisher_form": pending_google_publisher_form_obj,
         }
 
         assert request.flags.disallow_oidc.calls == [pretend.call()]
@@ -3140,11 +3148,19 @@ class TestManageAccountPublishingViews:
         monkeypatch.setattr(
             views, "PendingGitHubPublisherForm", pending_github_publisher_form_cls
         )
+        pending_google_publisher_form_obj = pretend.stub()
+        pending_google_publisher_form_cls = pretend.call_recorder(
+            lambda *a, **kw: pending_google_publisher_form_obj
+        )
+        monkeypatch.setattr(
+            views, "PendingGooglePublisherForm", pending_google_publisher_form_cls
+        )
 
         view = views.ManageAccountPublishingViews(pyramid_request)
 
         assert view.manage_publishing() == {
             "pending_github_publisher_form": pending_github_publisher_form_obj,
+            "pending_google_publisher_form": pending_google_publisher_form_obj,
         }
 
         assert pyramid_request.flags.disallow_oidc.calls == [pretend.call()]
@@ -3192,11 +3208,19 @@ class TestManageAccountPublishingViews:
         monkeypatch.setattr(
             views, "PendingGitHubPublisherForm", pending_github_publisher_form_cls
         )
+        pending_google_publisher_form_obj = pretend.stub()
+        pending_google_publisher_form_cls = pretend.call_recorder(
+            lambda *a, **kw: pending_google_publisher_form_obj
+        )
+        monkeypatch.setattr(
+            views, "PendingGooglePublisherForm", pending_google_publisher_form_cls
+        )
 
         view = views.ManageAccountPublishingViews(pyramid_request)
 
         assert view.add_pending_github_oidc_publisher() == {
             "pending_github_publisher_form": pending_github_publisher_form_obj,
+            "pending_google_publisher_form": pending_google_publisher_form_obj,
         }
 
         assert pyramid_request.flags.disallow_oidc.calls == [
@@ -3248,11 +3272,19 @@ class TestManageAccountPublishingViews:
         monkeypatch.setattr(
             views, "PendingGitHubPublisherForm", pending_github_publisher_form_cls
         )
+        pending_google_publisher_form_obj = pretend.stub()
+        pending_google_publisher_form_cls = pretend.call_recorder(
+            lambda *a, **kw: pending_google_publisher_form_obj
+        )
+        monkeypatch.setattr(
+            views, "PendingGooglePublisherForm", pending_google_publisher_form_cls
+        )
 
         view = views.ManageAccountPublishingViews(pyramid_request)
 
         assert view.add_pending_github_oidc_publisher() == {
             "pending_github_publisher_form": pending_github_publisher_form_obj,
+            "pending_google_publisher_form": pending_google_publisher_form_obj,
         }
 
         assert pyramid_request.flags.disallow_oidc.calls == [
@@ -3650,11 +3682,19 @@ class TestManageAccountPublishingViews:
         monkeypatch.setattr(
             views, "PendingGitHubPublisherForm", pending_github_publisher_form_cls
         )
+        pending_google_publisher_form_obj = pretend.stub()
+        pending_google_publisher_form_cls = pretend.call_recorder(
+            lambda *a, **kw: pending_google_publisher_form_obj
+        )
+        monkeypatch.setattr(
+            views, "PendingGooglePublisherForm", pending_google_publisher_form_cls
+        )
 
         view = views.ManageAccountPublishingViews(pyramid_request)
 
         assert view.delete_pending_oidc_publisher() == {
             "pending_github_publisher_form": pending_github_publisher_form_obj,
+            "pending_google_publisher_form": pending_google_publisher_form_obj,
         }
 
         assert pyramid_request.flags.disallow_oidc.calls == [pretend.call()]
