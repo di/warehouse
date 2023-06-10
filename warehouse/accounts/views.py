@@ -1390,6 +1390,15 @@ class ManageAccountPublishingViews:
         self.request = request
         self.project_factory = ProjectFactory(request)
         self.metrics = self.request.find_service(IMetricsService, context=None)
+        self.pending_github_publisher_form = PendingGitHubPublisherForm(
+            self.request.POST,
+            api_token=self.request.registry.settings.get("github.token"),
+            project_factory=self.project_factory,
+        )
+        self.pending_google_publisher_form = PendingGooglePublisherForm(
+            self.request.POST,
+            project_factory=self.project_factory,
+        )
 
     @property
     def _ratelimiters(self):
@@ -1420,21 +1429,6 @@ class ManageAccountPublishingViews:
                     self.request.remote_addr
                 )
             )
-
-    @property
-    def pending_github_publisher_form(self):
-        return PendingGitHubPublisherForm(
-            self.request.POST,
-            api_token=self.request.registry.settings.get("github.token"),
-            project_factory=self.project_factory,
-        )
-
-    @property
-    def pending_google_publisher_form(self):
-        return PendingGooglePublisherForm(
-            self.request.POST,
-            project_factory=self.project_factory,
-        )
 
     @property
     def default_response(self):
