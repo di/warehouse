@@ -1455,7 +1455,7 @@ class ManageAccountPublishingViews:
         request_method="POST",
         request_param=PendingGooglePublisherForm.__params__,
     )
-    def add_pending_google_oidc_pubisher(self):
+    def add_pending_google_oidc_publisher(self):
         if self.request.flags.disallow_oidc(AdminFlagValue.DISALLOW_GOOGLE_OIDC):
             self.request.session.flash(
                 self.request._(

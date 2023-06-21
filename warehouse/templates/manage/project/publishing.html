@@ -106,7 +106,7 @@
     </form>
 {% endmacro %}
 
-{% macro google_form(request, google_pubisher_form) %}
+{% macro google_form(request, google_publisher_form) %}
   {{ form_error_anchor(google_publisher_form) }}
   <form method="POST" action="{{ request.route_path('manage.project.settings.publishing', project_name=project.name) }}#errors">
     <input name="csrf_token" type="hidden" value="{{ request.session.get_csrf_token() }}">
