@@ -1451,15 +1451,13 @@ class ManageAccountPublishingViews:
 
         return self.default_response
 
-    @view_config(
-        request_method="POST",
-        request_param=PendingGooglePublisherForm.__params__,
-    )
-    def add_pending_google_oidc_publisher(self):
-        if self.request.flags.disallow_oidc(AdminFlagValue.DISALLOW_GOOGLE_OIDC):
+    def _add_pending_oidc_publisher(
+        self, publisher_name, admin_flag, form, make_pending_publisher
+    ):
+        if self.request.flags.disallow_oidc(admin_flag):
             self.request.session.flash(
                 self.request._(
-                    "Google-based trusted publishing is temporarily disabled. "
+                    f"{publisher_name}-based trusted publishing is temporarily disabled. "
                     "See https://pypi.org/help#admin-intervention for details."
                 ),
                 queue="error",
@@ -1467,7 +1465,8 @@ class ManageAccountPublishingViews:
             return self.default_response
 
         self.metrics.increment(
-            "warehouse.oidc.add_pending_publisher.attempt", tags=["publisher:Google"]
+            "warehouse.oidc.add_pending_publisher.attempt",
+            tags=[f"publisher:{publisher_name}"],
         )
 
         if not self.request.user.has_primary_verified_email:
@@ -1498,7 +1497,7 @@ class ManageAccountPublishingViews:
         except TooManyOIDCRegistrations as exc:
             self.metrics.increment(
                 "warehouse.oidc.add_pending_publisher.ratelimited",
-                tags=["publisher:Google"],
+                tags=[f"publisher:{publisher_name}"],
             )
             return HTTPTooManyRequests(
                 self.request._(
@@ -1510,15 +1509,12 @@ class ManageAccountPublishingViews:
 
         self._hit_ratelimits()
 
-        response = self.default_response
-        form = response["pending_google_publisher_form"]
-
         if not form.validate():
             self.request.session.flash(
                 self.request._("The trusted publisher could not be registered"),
                 queue="error",
             )
-            return response
+            return self.default_response
 
         publisher_already_exists = (
             self.request.db.query(PendingGooglePublisher)
@@ -1538,14 +1534,9 @@ class ManageAccountPublishingViews:
                 ),
                 queue="error",
             )
-            return response
+            return self.default_response
 
-        pending_publisher = PendingGooglePublisher(
-            project_name=form.project_name.data,
-            added_by=self.request.user,
-            email=form.email.data,
-            sub=form.sub.data,
-        )
+        pending_publisher = make_pending_publisher(self.request, form)
 
         self.request.db.add(pending_publisher)
         self.request.db.flush()  # To get the new ID
@@ -1573,141 +1564,48 @@ class ManageAccountPublishingViews:
         )
 
         self.metrics.increment(
-            "warehouse.oidc.add_pending_publisher.ok", tags=["publisher:Google"]
+            "warehouse.oidc.add_pending_publisher.ok",
+            tags=[f"publisher:{publisher_name}"],
         )
 
         return HTTPSeeOther(self.request.path)
 
     @view_config(
         request_method="POST",
+        request_param=PendingGooglePublisherForm.__params__,
+    )
+    def add_pending_google_oidc_publisher(self):
+        return self._add_pending_oidc_publisher(
+            publisher_name="Google",
+            admin_flag=AdminFlagValue.DISALLOW_GOOGLE_OIDC,
+            form=self.default_response["pending_google_publisher_form"],
+            make_pending_publisher=lambda request, form: PendingGooglePublisher(
+                project_name=form.project_name.data,
+                added_by=request.user,
+                email=form.email.data,
+                sub=form.sub.data,
+            ),
+        )
+
+    @view_config(
+        request_method="POST",
         request_param=PendingGitHubPublisherForm.__params__,
     )
     def add_pending_github_oidc_publisher(self):
-        if self.request.flags.disallow_oidc(AdminFlagValue.DISALLOW_GITHUB_OIDC):
-            self.request.session.flash(
-                self.request._(
-                    "GitHub-based trusted publishing is temporarily disabled. "
-                    "See https://pypi.org/help#admin-intervention for details."
-                ),
-                queue="error",
-            )
-            return self.default_response
-
-        self.metrics.increment(
-            "warehouse.oidc.add_pending_publisher.attempt", tags=["publisher:GitHub"]
-        )
-
-        if not self.request.user.has_primary_verified_email:
-            self.request.session.flash(
-                self.request._(
-                    "You must have a verified email in order to register a "
-                    "pending trusted publisher. "
-                    "See https://pypi.org/help#openid-connect for details."
-                ),
-                queue="error",
-            )
-            return self.default_response
-
-        # Separately from having permission to register pending OIDC publishers,
-        # we limit users to no more than 3 pending publishers at once.
-        if len(self.request.user.pending_oidc_publishers) >= 3:
-            self.request.session.flash(
-                self.request._(
-                    "You can't register more than 3 pending trusted "
-                    "publishers at once."
-                ),
-                queue="error",
-            )
-            return self.default_response
-
-        try:
-            self._check_ratelimits()
-        except TooManyOIDCRegistrations as exc:
-            self.metrics.increment(
-                "warehouse.oidc.add_pending_publisher.ratelimited",
-                tags=["publisher:GitHub"],
-            )
-            return HTTPTooManyRequests(
-                self.request._(
-                    "There have been too many attempted trusted publisher "
-                    "registrations. Try again later."
-                ),
-                retry_after=exc.resets_in.total_seconds(),
-            )
-
-        self._hit_ratelimits()
-
-        response = self.default_response
-        form = response["pending_github_publisher_form"]
-
-        if not form.validate():
-            self.request.session.flash(
-                self.request._("The trusted publisher could not be registered"),
-                queue="error",
-            )
-            return response
-
-        publisher_already_exists = (
-            self.request.db.query(PendingGitHubPublisher)
-            .filter_by(
+        return self._add_pending_oidc_publisher(
+            publisher_name="GitHub",
+            admin_flag=AdminFlagValue.DISALLOW_GITHUB_OIDC,
+            form=self.default_response["pending_github_publisher_form"],
+            make_pending_publisher=lambda request, form: PendingGitHubPublisher(
+                project_name=form.project_name.data,
+                added_by=self.request.user,
                 repository_name=form.repository.data,
                 repository_owner=form.normalized_owner,
+                repository_owner_id=form.owner_id,
                 workflow_filename=form.workflow_filename.data,
                 environment=form.normalized_environment,
-            )
-            .first()
-            is not None
-        )
-
-        if publisher_already_exists:
-            self.request.session.flash(
-                self.request._(
-                    "This trusted publisher has already been registered. "
-                    "Please contact PyPI's admins if this wasn't intentional."
-                ),
-                queue="error",
-            )
-            return response
-
-        pending_publisher = PendingGitHubPublisher(
-            project_name=form.project_name.data,
-            added_by=self.request.user,
-            repository_name=form.repository.data,
-            repository_owner=form.normalized_owner,
-            repository_owner_id=form.owner_id,
-            workflow_filename=form.workflow_filename.data,
-            environment=form.normalized_environment,
-        )
-
-        self.request.db.add(pending_publisher)
-        self.request.db.flush()  # To get the new ID
-
-        self.request.user.record_event(
-            tag=EventTag.Account.PendingOIDCPublisherAdded,
-            request=self.request,
-            additional={
-                "project": pending_publisher.project_name,
-                "publisher": pending_publisher.publisher_name,
-                "id": str(pending_publisher.id),
-                "specifier": str(pending_publisher),
-                "url": pending_publisher.publisher_url(),
-                "submitted_by": self.request.user.username,
-            },
-        )
-
-        self.request.session.flash(
-            self.request._(
-                "Registered a new pending publisher to create "
-                f"the project '{pending_publisher.project_name}'."
             ),
-            queue="success",
         )
-
-        self.metrics.increment(
-            "warehouse.oidc.add_pending_publisher.ok", tags=["publisher:GitHub"]
-        )
-
-        return HTTPSeeOther(self.request.path)
 
     @view_config(
         request_method="POST",
