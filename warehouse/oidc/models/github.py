@@ -13,7 +13,6 @@
 from sqlalchemy import ForeignKey, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Query, mapped_column
-from sqlalchemy.sql.expression import func, literal
 
 from warehouse.oidc.interfaces import SignedClaims
 from warehouse.oidc.models._core import (
@@ -139,19 +138,18 @@ class GitHubPublisherMixin:
         repository = signed_claims["repository"]
         repository_owner, repository_name = repository.split("/", 1)
         workflow_prefix = f"{repository}/.github/workflows/"
-        workflow_ref = signed_claims["job_workflow_ref"].removeprefix(workflow_prefix)
+        workflow_filename = (
+            signed_claims["job_workflow_ref"]
+            .split("@")[0]
+            .removeprefix(workflow_prefix)
+        )
 
-        return (
-            Query(klass)
-            .filter_by(
-                repository_name=repository_name,
-                repository_owner=repository_owner,
-                repository_owner_id=signed_claims["repository_owner_id"],
-                environment=environment.lower(),
-            )
-            .filter(
-                literal(workflow_ref).like(func.concat(klass.workflow_filename, "%"))
-            )
+        return Query(klass).filter_by(
+            repository_name=repository_name,
+            repository_owner=repository_owner,
+            repository_owner_id=signed_claims["repository_owner_id"],
+            environment=environment.lower(),
+            workflow_filename=workflow_filename,
         )
 
     @staticmethod
@@ -159,19 +157,18 @@ class GitHubPublisherMixin:
         repository = signed_claims["repository"]
         repository_owner, repository_name = repository.split("/", 1)
         workflow_prefix = f"{repository}/.github/workflows/"
-        workflow_ref = signed_claims["job_workflow_ref"].removeprefix(workflow_prefix)
+        workflow_filename = (
+            signed_claims["job_workflow_ref"]
+            .split("@")[0]
+            .removeprefix(workflow_prefix)
+        )
 
-        return (
-            Query(klass)
-            .filter_by(
-                repository_name=repository_name,
-                repository_owner=repository_owner,
-                repository_owner_id=signed_claims["repository_owner_id"],
-                environment=None,
-            )
-            .filter(
-                literal(workflow_ref).like(func.concat(klass.workflow_filename, "%"))
-            )
+        return Query(klass).filter_by(
+            repository_name=repository_name,
+            repository_owner=repository_owner,
+            repository_owner_id=signed_claims["repository_owner_id"],
+            environment=None,
+            workflow_filename=workflow_filename,
         )
 
     __lookup_strategies__ = [
