@@ -440,6 +440,27 @@ class TestGitHubPublisher:
         check = github.GitHubPublisher.__optional_verifiable_claims__["environment"]
         assert check(truth, claim, pretend.stub()) is valid
 
+    def test_github_publisher_duplicates_cant_be_created(self, db_request):
+        publisher1 = github.GitHubPublisher(
+            repository_name="repository_name",
+            repository_owner="repository_owner",
+            repository_owner_id="666",
+            workflow_filename="workflow_filename.yml",
+            environment=None,
+        )
+        db_request.db.add(publisher1)
+        db_request.db.commit()
+
+        publisher2 = github.GitHubPublisher(
+            repository_name="repository_name",
+            repository_owner="repository_owner",
+            repository_owner_id="666",
+            workflow_filename="workflow_filename.yml",
+            environment=None,
+        )
+        db_request.db.add(publisher2)
+        db_request.db.commit()
+
 
 class TestPendingGitHubPublisher:
     def test_reify_does_not_exist_yet(self, db_request):
