@@ -207,3 +207,37 @@ hr {
   background: $border-color;
   background-image: linear-gradient(to right, $border-color, $white);
 }
+
+.verified {
+  ul {
+    padding-top: 0px;
+  }
+
+  li {
+    list-style-type: circle;
+    list-style-position: inside;
+    padding-left: 20px;
+
+    a {
+        display: inline;
+        padding: 0;
+    }
+  }
+
+  h3 {
+    padding-bottom: 0px;
+  }
+
+  h6 {
+    padding-bottom: 5px;
+    padding-top: 15px;
+  }
+
+  small {
+    color: #555;
+  }
+
+  .check {
+    color: #148024;
+  }
+}

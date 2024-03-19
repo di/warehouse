@@ -167,6 +167,8 @@ def includeme(config):
                     "*.fastly-insights.com",
                     "*.ethicalads.io",
                     "ethicalads.blob.core.windows.net",
+                    "pypi.org",
+                    "https://secure.gravatar.com",
                 ],
                 "script-src": _script_src_settings(config),
                 "style-src": [
