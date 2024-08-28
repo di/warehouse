@@ -54,7 +54,9 @@ def test_render_simple_detail(db_request, monkeypatch, jinja):
         **_simple_detail(project, db_request), request=db_request
     ).encode("utf-8")
 
-    content_hash, path = render_simple_detail(project, db_request)
+    content, content_hash, path = render_simple_detail(project, db_request)
+
+    assert content == expected_content.decode()
 
     assert fakeblake2b.calls == [pretend.call(digest_size=32)]
     assert fake_hasher.update.calls == [pretend.call(expected_content)]
@@ -111,7 +113,9 @@ def test_render_simple_detail_with_store(db_request, monkeypatch, jinja):
         **_simple_detail(project, db_request), request=db_request
     ).encode("utf-8")
 
-    content_hash, path = render_simple_detail(project, db_request, store=True)
+    content, content_hash, path = render_simple_detail(project, db_request, store=True)
+
+    assert content == expected_content.decode()
 
     assert fake_named_temporary_file.write.calls == [pretend.call(expected_content)]
     assert fake_named_temporary_file.flush.calls == [pretend.call()]

@@ -204,19 +204,39 @@ class TestSimpleDetail:
         ("content_type", "renderer_override"),
         CONTENT_TYPE_PARAMS,
     )
-    def test_no_files_no_serial(self, db_request, content_type, renderer_override):
+    def test_no_files_no_serial(
+        self, db_request, content_type, renderer_override, monkeypatch
+    ):
         db_request.accept = content_type
         project = ProjectFactory.create()
         db_request.matchdict["name"] = project.normalized_name
         user = UserFactory.create()
         JournalEntryFactory.create(submitted_by=user)
 
-        assert simple.simple_detail(project, db_request) == {
-            "meta": {"_last-serial": 0, "api-version": API_VERSION},
-            "name": project.normalized_name,
-            "files": [],
-            "versions": [],
-        }
+        content = "Okie dokie"
+        render_simple_detail = pretend.call_recorder(
+            lambda *a, **kw: (content, None, None)
+        )
+        monkeypatch.setattr(
+            "warehouse.api.simple.render_simple_detail", render_simple_detail
+        )
+
+        assert simple.simple_detail(project, db_request) == db_request.response
+        assert db_request.response.text == content
+
+        assert render_simple_detail.calls == [
+            pretend.call(
+                project,
+                db_request,
+                context={
+                    "meta": {"_last-serial": 0, "api-version": API_VERSION},
+                    "name": project.normalized_name,
+                    "files": [],
+                    "versions": [],
+                },
+                store=True,
+            )
+        ]
 
         assert db_request.response.headers["X-PyPI-Last-Serial"] == "0"
         assert db_request.response.content_type == content_type
@@ -229,19 +249,39 @@ class TestSimpleDetail:
         ("content_type", "renderer_override"),
         CONTENT_TYPE_PARAMS,
     )
-    def test_no_files_with_serial(self, db_request, content_type, renderer_override):
+    def test_no_files_with_serial(
+        self, db_request, content_type, renderer_override, monkeypatch
+    ):
         db_request.accept = content_type
         project = ProjectFactory.create()
         db_request.matchdict["name"] = project.normalized_name
         user = UserFactory.create()
         je = JournalEntryFactory.create(name=project.name, submitted_by=user)
 
-        assert simple.simple_detail(project, db_request) == {
-            "meta": {"_last-serial": je.id, "api-version": API_VERSION},
-            "name": project.normalized_name,
-            "files": [],
-            "versions": [],
-        }
+        content = "Okie dokie"
+        render_simple_detail = pretend.call_recorder(
+            lambda *a, **kw: (content, None, None)
+        )
+        monkeypatch.setattr(
+            "warehouse.api.simple.render_simple_detail", render_simple_detail
+        )
+
+        assert simple.simple_detail(project, db_request) == db_request.response
+        assert db_request.response.text == content
+
+        assert render_simple_detail.calls == [
+            pretend.call(
+                project,
+                db_request,
+                context={
+                    "meta": {"_last-serial": je.id, "api-version": API_VERSION},
+                    "name": project.normalized_name,
+                    "files": [],
+                    "versions": [],
+                },
+                store=True,
+            )
+        ]
 
         assert db_request.response.headers["X-PyPI-Last-Serial"] == str(je.id)
         assert db_request.response.content_type == content_type
@@ -254,7 +294,9 @@ class TestSimpleDetail:
         ("content_type", "renderer_override"),
         CONTENT_TYPE_PARAMS,
     )
-    def test_with_files_no_serial(self, db_request, content_type, renderer_override):
+    def test_with_files_no_serial(
+        self, db_request, content_type, renderer_override, monkeypatch
+    ):
         db_request.accept = content_type
         project = ProjectFactory.create()
         releases = ReleaseFactory.create_batch(3, project=project)
@@ -271,25 +313,43 @@ class TestSimpleDetail:
         user = UserFactory.create()
         JournalEntryFactory.create(submitted_by=user)
 
-        assert simple.simple_detail(project, db_request) == {
-            "meta": {"_last-serial": 0, "api-version": API_VERSION},
-            "name": project.normalized_name,
-            "versions": release_versions,
-            "files": [
-                {
-                    "filename": f.filename,
-                    "url": f"/file/{f.filename}",
-                    "hashes": {"sha256": f.sha256_digest},
-                    "requires-python": f.requires_python,
-                    "yanked": False,
-                    "size": f.size,
-                    "upload-time": f.upload_time.isoformat() + "Z",
-                    "data-dist-info-metadata": False,
-                    "core-metadata": False,
-                }
-                for f in files
-            ],
-        }
+        content = "Okie dokie"
+        render_simple_detail = pretend.call_recorder(
+            lambda *a, **kw: (content, None, None)
+        )
+        monkeypatch.setattr(
+            "warehouse.api.simple.render_simple_detail", render_simple_detail
+        )
+
+        assert simple.simple_detail(project, db_request) == db_request.response
+        assert db_request.response.text == content
+
+        assert render_simple_detail.calls == [
+            pretend.call(
+                project,
+                db_request,
+                context={
+                    "meta": {"_last-serial": 0, "api-version": API_VERSION},
+                    "name": project.normalized_name,
+                    "versions": release_versions,
+                    "files": [
+                        {
+                            "filename": f.filename,
+                            "url": f"/file/{f.filename}",
+                            "hashes": {"sha256": f.sha256_digest},
+                            "requires-python": f.requires_python,
+                            "yanked": False,
+                            "size": f.size,
+                            "upload-time": f.upload_time.isoformat() + "Z",
+                            "data-dist-info-metadata": False,
+                            "core-metadata": False,
+                        }
+                        for f in files
+                    ],
+                },
+                store=True,
+            )
+        ]
 
         assert db_request.response.headers["X-PyPI-Last-Serial"] == "0"
         assert db_request.response.content_type == content_type
@@ -302,7 +362,9 @@ class TestSimpleDetail:
         ("content_type", "renderer_override"),
         CONTENT_TYPE_PARAMS,
     )
-    def test_with_files_with_serial(self, db_request, content_type, renderer_override):
+    def test_with_files_with_serial(
+        self, db_request, content_type, renderer_override, monkeypatch
+    ):
         db_request.accept = content_type
         project = ProjectFactory.create()
         releases = ReleaseFactory.create_batch(3, project=project)
@@ -319,25 +381,43 @@ class TestSimpleDetail:
         user = UserFactory.create()
         je = JournalEntryFactory.create(name=project.name, submitted_by=user)
 
-        assert simple.simple_detail(project, db_request) == {
-            "meta": {"_last-serial": je.id, "api-version": API_VERSION},
-            "name": project.normalized_name,
-            "versions": release_versions,
-            "files": [
-                {
-                    "filename": f.filename,
-                    "url": f"/file/{f.filename}",
-                    "hashes": {"sha256": f.sha256_digest},
-                    "requires-python": f.requires_python,
-                    "yanked": False,
-                    "size": f.size,
-                    "upload-time": f.upload_time.isoformat() + "Z",
-                    "data-dist-info-metadata": False,
-                    "core-metadata": False,
-                }
-                for f in files
-            ],
-        }
+        content = "Okie dokie"
+        render_simple_detail = pretend.call_recorder(
+            lambda *a, **kw: (content, None, None)
+        )
+        monkeypatch.setattr(
+            "warehouse.api.simple.render_simple_detail", render_simple_detail
+        )
+
+        assert simple.simple_detail(project, db_request) == db_request.response
+        assert db_request.response.text == content
+
+        assert render_simple_detail.calls == [
+            pretend.call(
+                project,
+                db_request,
+                context={
+                    "meta": {"_last-serial": je.id, "api-version": API_VERSION},
+                    "name": project.normalized_name,
+                    "versions": release_versions,
+                    "files": [
+                        {
+                            "filename": f.filename,
+                            "url": f"/file/{f.filename}",
+                            "hashes": {"sha256": f.sha256_digest},
+                            "requires-python": f.requires_python,
+                            "yanked": False,
+                            "size": f.size,
+                            "upload-time": f.upload_time.isoformat() + "Z",
+                            "data-dist-info-metadata": False,
+                            "core-metadata": False,
+                        }
+                        for f in files
+                    ],
+                },
+                store=True,
+            )
+        ]
 
         assert db_request.response.headers["X-PyPI-Last-Serial"] == str(je.id)
         assert db_request.response.content_type == content_type
@@ -351,7 +431,7 @@ class TestSimpleDetail:
         CONTENT_TYPE_PARAMS,
     )
     def test_with_files_with_version_multi_digit(
-        self, db_request, content_type, renderer_override
+        self, db_request, content_type, renderer_override, monkeypatch
     ):
         db_request.accept = content_type
         project = ProjectFactory.create()
@@ -404,33 +484,51 @@ class TestSimpleDetail:
         user = UserFactory.create()
         je = JournalEntryFactory.create(name=project.name, submitted_by=user)
 
-        assert simple.simple_detail(project, db_request) == {
-            "meta": {"_last-serial": je.id, "api-version": API_VERSION},
-            "name": project.normalized_name,
-            "versions": release_versions,
-            "files": [
-                {
-                    "filename": f.filename,
-                    "url": f"/file/{f.filename}",
-                    "hashes": {"sha256": f.sha256_digest},
-                    "requires-python": f.requires_python,
-                    "yanked": False,
-                    "size": f.size,
-                    "upload-time": f.upload_time.isoformat() + "Z",
-                    "data-dist-info-metadata": (
-                        {"sha256": "deadbeefdeadbeefdeadbeefdeadbeef"}
-                        if f.metadata_file_sha256_digest is not None
-                        else False
-                    ),
-                    "core-metadata": (
-                        {"sha256": "deadbeefdeadbeefdeadbeefdeadbeef"}
-                        if f.metadata_file_sha256_digest is not None
-                        else False
-                    ),
-                }
-                for f in files
-            ],
-        }
+        content = "Okie dokie"
+        render_simple_detail = pretend.call_recorder(
+            lambda *a, **kw: (content, None, None)
+        )
+        monkeypatch.setattr(
+            "warehouse.api.simple.render_simple_detail", render_simple_detail
+        )
+
+        assert simple.simple_detail(project, db_request) == db_request.response
+        assert db_request.response.text == content
+
+        assert render_simple_detail.calls == [
+            pretend.call(
+                project,
+                db_request,
+                context={
+                    "meta": {"_last-serial": je.id, "api-version": API_VERSION},
+                    "name": project.normalized_name,
+                    "versions": release_versions,
+                    "files": [
+                        {
+                            "filename": f.filename,
+                            "url": f"/file/{f.filename}",
+                            "hashes": {"sha256": f.sha256_digest},
+                            "requires-python": f.requires_python,
+                            "yanked": False,
+                            "size": f.size,
+                            "upload-time": f.upload_time.isoformat() + "Z",
+                            "data-dist-info-metadata": (
+                                {"sha256": "deadbeefdeadbeefdeadbeefdeadbeef"}
+                                if f.metadata_file_sha256_digest is not None
+                                else False
+                            ),
+                            "core-metadata": (
+                                {"sha256": "deadbeefdeadbeefdeadbeefdeadbeef"}
+                                if f.metadata_file_sha256_digest is not None
+                                else False
+                            ),
+                        }
+                        for f in files
+                    ],
+                },
+                store=True,
+            )
+        ]
 
         assert db_request.response.headers["X-PyPI-Last-Serial"] == str(je.id)
         assert db_request.response.content_type == content_type
@@ -439,7 +537,7 @@ class TestSimpleDetail:
         if renderer_override is not None:
             assert db_request.override_renderer == renderer_override
 
-    def test_with_files_quarantined_omitted_from_index(self, db_request):
+    def test_with_files_quarantined_omitted_from_index(self, db_request, monkeypatch):
         db_request.accept = "text/html"
         project = ProjectFactory.create(lifecycle_status="quarantine-enter")
         releases = ReleaseFactory.create_batch(3, project=project)
@@ -448,9 +546,27 @@ class TestSimpleDetail:
             for r in releases
         ]
 
-        assert simple.simple_detail(project, db_request) == {
-            "meta": {"_last-serial": 0, "api-version": API_VERSION},
-            "name": project.normalized_name,
-            "files": [],
-            "versions": [],
-        }
+        content = "Okie dokie"
+        render_simple_detail = pretend.call_recorder(
+            lambda *a, **kw: (content, None, None)
+        )
+        monkeypatch.setattr(
+            "warehouse.api.simple.render_simple_detail", render_simple_detail
+        )
+
+        assert simple.simple_detail(project, db_request) == db_request.response
+        assert db_request.response.text == content
+
+        assert render_simple_detail.calls == [
+            pretend.call(
+                project,
+                db_request,
+                context={
+                    "meta": {"_last-serial": 0, "api-version": API_VERSION},
+                    "name": project.normalized_name,
+                    "files": [],
+                    "versions": [],
+                },
+                store=True,
+            )
+        ]

@@ -320,6 +320,7 @@ def get_app_config(database, nondefaults=None):
         "files.backend": "warehouse.packaging.services.LocalFileStorage",
         "archive_files.backend": "warehouse.packaging.services.LocalArchiveFileStorage",
         "simple.backend": "warehouse.packaging.services.LocalSimpleStorage",
+        "simple.path": "/tmp",
         "docs.backend": "warehouse.packaging.services.LocalDocsStorage",
         "sponsorlogos.backend": "warehouse.admin.services.LocalSponsorLogoStorage",
         "billing.backend": "warehouse.subscriptions.services.MockStripeBillingService",
