@@ -103,8 +103,9 @@ def _simple_detail(project, request):
     }
 
 
-def render_simple_detail(project, request, store=False):
-    context = _simple_detail(project, request)
+def render_simple_detail(project, request, context=None, store=False):
+    if not context:
+        context = _simple_detail(project, request)
 
     env = request.registry.queryUtility(IJinja2Environment, name=".jinja2")
     template = env.get_template("templates/api/simple/detail.html")
@@ -143,4 +144,4 @@ def render_simple_detail(project, request, store=False):
                 },
             )
 
-    return (content_hash, simple_detail_path)
+    return (content, content_hash, simple_detail_path)

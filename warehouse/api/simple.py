@@ -19,7 +19,11 @@ from sqlalchemy import func
 from warehouse.cache.http import add_vary, cache_control
 from warehouse.cache.origin import origin_cache
 from warehouse.packaging.models import JournalEntry, Project
-from warehouse.packaging.utils import _simple_detail, _simple_index
+from warehouse.packaging.utils import (
+    _simple_detail,
+    _simple_index,
+    render_simple_detail,
+)
 from warehouse.utils.cors import _CORS_HEADERS
 
 
@@ -84,8 +88,8 @@ def simple_index(request):
 
 @view_config(
     route_name="api.simple.detail",
+    renderer="SimpleDetailRenderer",
     context=Project,
-    renderer="api/simple/detail.html",
     decorator=[
         add_vary("Accept"),
         cache_control(10 * 60),  # 10 minutes
@@ -118,4 +122,9 @@ def simple_detail(project, request):
     # Get the latest serial number for this project.
     request.response.headers["X-PyPI-Last-Serial"] = str(project.last_serial)
 
-    return _simple_detail(project, request)
+    # Set the content of the response
+    context = _simple_detail(project, request)
+    content, _, __ = render_simple_detail(project, request, context=context, store=True)
+    request.response.text = content
+
+    return request.response
