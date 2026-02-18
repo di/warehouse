@@ -6,7 +6,6 @@ from celery.schedules import crontab
 
 from warehouse import packaging
 from warehouse.accounts.models import Email, User
-from warehouse.manage.tasks import update_role_invitation_status
 from warehouse.organizations.models import Organization
 from warehouse.packaging.interfaces import (
     IDocsStorage,
@@ -160,9 +159,5 @@ def test_includeme(monkeypatch):
     )
     assert (
         pretend.call(crontab(minute="*/5"), update_description_html)
-        in config.add_periodic_task.calls
-    )
-    assert (
-        pretend.call(crontab(minute="*/5"), update_role_invitation_status)
         in config.add_periodic_task.calls
     )
